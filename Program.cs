@@ -18,24 +18,19 @@ namespace Localization
         static Dictionary<string, string> dict1 = new Dictionary<string, string>();
         static Dictionary<string, string> dict2 = new Dictionary<string, string>();
 
+
         static void Main(string[] args)
         {
             ReadFromFile();
             WalkDirectoryTree(new DirectoryInfo(Environment.GetCommandLineArgs()[1]), "xaml");
             //string keys = "";
-            List<string> Branches = new List<string>();
+            //List<string> Branches = new List<string>();
             foreach (var item in dict2.Keys)
             {
                 Console.WriteLine(item);
                 //Branches.Add(item);
                 //keys += item + Environment.NewLine;
             }
-
-            //var branchesXml = Branches.Select(i => new XElement("branch",
-            //                                                    new XAttribute("id", i)));
-            //var bodyXml = new XElement("Branches", branchesXml);
-            //Console.Write(bodyXml);
-            //Clipboard.SetData("CommaSeparatedValue", bodyXml);
         }
         static void WalkDirectoryTree(DirectoryInfo root, string ext)
         {
@@ -89,7 +84,7 @@ namespace Localization
         }
         public static void ReadFromFile()
         {
-            using (TextFieldParser parser = new TextFieldParser(@"g:\11.csv"))
+            using (TextFieldParser parser = new TextFieldParser(@"e:\11.csv"))
             {
                 parser.TextFieldType = FieldType.Delimited;
                 parser.SetDelimiters(",");
@@ -119,6 +114,19 @@ namespace Localization
                     string word = regex2.Matches(match.Value)[0].Value.Trim('"');
                     if (!dict1.ContainsKey(word) && !dict2.ContainsKey(word))
                         dict2.Add(word, ""); 
+                }
+        }
+        public static void WriteKeysToFile(FileInfo file)
+        {
+            string text = File.ReadAllText(file.FullName);
+
+            MatchCollection matches = regex1.Matches(text);
+            foreach (Match match in matches)
+                if (Regex.IsMatch(regex2.Matches(match.Value)[0].Value, @"\p{IsCyrillic}"))
+                {
+                    string word = regex2.Matches(match.Value)[0].Value.Trim('"');
+                    if (!dict1.ContainsKey(word) && !dict2.ContainsKey(word))
+                        dict2.Add(word, "");
                 }
         }
     }
