@@ -13,6 +13,7 @@ namespace Localization
 {
     internal class Program
     {
+        // E:\Projects\ZabotaAnswers\Zabota-Answers
         static Regex regex1 = new Regex(@"\W(ToolTip=""[^""\\{]*(?:\\.[^""\\]*)*""|Content=""[^""\\{]*(?:\\.[^""\\]*)*""|Text=""[^""\\{]*(?:\\.[^""\\]*)*"")\W", RegexOptions.Compiled);
         static Regex regex2 = new Regex("\"([^\"]*)\"", RegexOptions.Compiled);
         static Dictionary<string, string> dict1 = new Dictionary<string, string>();
@@ -23,6 +24,7 @@ namespace Localization
         {
             ReadFromFile();
             WalkDirectoryTree(new DirectoryInfo(Environment.GetCommandLineArgs()[1]), "xaml");
+            WalkDirectoryTree(new DirectoryInfo(Environment.GetCommandLineArgs()[1]), "xaml", true);
             //string keys = "";
             //List<string> Branches = new List<string>();
             foreach (var item in dict2.Keys)
@@ -32,7 +34,7 @@ namespace Localization
                 //keys += item + Environment.NewLine;
             }
         }
-        static void WalkDirectoryTree(DirectoryInfo root, string ext)
+        static void WalkDirectoryTree(DirectoryInfo root, string ext, bool insert = false)
         {
             FileInfo[] files = null;
             DirectoryInfo[] subDirs = null;
@@ -43,7 +45,10 @@ namespace Localization
                 files = root.GetFiles($"*.{ext}");
                 foreach (var file in files)
                 {
-                    ReadKeysFromFile(file);
+                    if (!insert)
+                        ReadKeysFromFile(file);
+                    else
+                        InsertKeysToFile(file);
                 }
             }
             // Это происходит, если хотя бы для одного из файлов требуются
@@ -98,8 +103,10 @@ namespace Localization
                         first = false;
                         continue;
                     }
-                    if (!dict1.ContainsKey(fields[2]))
-                       dict1.Add(fields[2], "");
+                    if (!dict1.ContainsKey(fields[2]) && fields[0] != "")
+                    {
+                        dict1.Add(fields[2], fields[0]);
+                    }
                 }
             }
         }
@@ -108,6 +115,7 @@ namespace Localization
             string text = File.ReadAllText(file.FullName);
 
             MatchCollection matches = regex1.Matches(text);
+
             foreach(Match match in matches)
                 if (Regex.IsMatch(regex2.Matches(match.Value)[0].Value, @"\p{IsCyrillic}"))
                 {
@@ -116,18 +124,19 @@ namespace Localization
                         dict2.Add(word, ""); 
                 }
         }
-        public static void WriteKeysToFile(FileInfo file)
+        public static void InsertKeysToFile(FileInfo file)
         {
             string text = File.ReadAllText(file.FullName);
-
-            MatchCollection matches = regex1.Matches(text);
-            foreach (Match match in matches)
-                if (Regex.IsMatch(regex2.Matches(match.Value)[0].Value, @"\p{IsCyrillic}"))
-                {
-                    string word = regex2.Matches(match.Value)[0].Value.Trim('"');
-                    if (!dict1.ContainsKey(word) && !dict2.ContainsKey(word))
-                        dict2.Add(word, "");
-                }
+            foreach (var item in dict1)
+            {
+                //if (item.Key == "Промоутеров за выбранный период")
+                //    if (text.Contains($"\"{item.Key}\""))
+                //        { var t = 1; }
+                text = text.Replace($"\"{item.Key}\"", $"\"{{Loc {item.Value}}}\"");
+                //if (text.Contains($"\"{item.Key}\""))
+                //    { var t = 1; }
+            }
+            File.WriteAllText(file.FullName, text);
         }
     }
 }
